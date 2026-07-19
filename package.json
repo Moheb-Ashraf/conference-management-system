@@ -1,0 +1,20 @@
+{
+  "name": "conference-management-system",
+  "version": "1.0.0",
+  "description": "Conference Management System",
+  "main": "server/src/server.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev",
+    "seed": "cd server && npm run seed",
+    "migrate": "cd server && npm run migrate",
+    "generate": "cd server && npm run generate",
+    "install-all": "npm install && cd server && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
