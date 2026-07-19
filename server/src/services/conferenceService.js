@@ -28,11 +28,10 @@ class ConferenceService {
     });
   }
 
-  async getAllConferences() {
-    return await conferenceRepository.findMany({
-      status: { not: ARCHIVED }
-    });
-  }
+  async getAllConferences(userId, role) {
+  // يجب تمرير userId و role للـ Repository ليقوم بالفلترة الصحيحة
+  return await conferenceRepository.findMany(userId, role);
+}
 
   async getConferenceById(id) {
     const conference = await conferenceRepository.findById(id);

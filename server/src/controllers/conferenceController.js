@@ -10,8 +10,8 @@ exports.create = asyncHandler(async (req, res) => {
 });
 
 exports.getAll = asyncHandler(async (req, res) => {
-  const conferences = await conferenceService.getAllConferences();
-  success(res, 'قائمة المؤتمرات', { conferences });
+  const conferences = await conferenceService.getAllConferences(req.user.id, req.user.role);
+  success(res, 'قائمة المؤتمرات المتاحة', { conferences });
 });
 
 exports.getOne = asyncHandler(async (req, res) => {
