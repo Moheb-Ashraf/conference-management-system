@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  ADMIN
+  LEADER
+  VIEWER
+}
+
+enum ConferenceStatus {
+  UPCOMING
+  ACTIVE
+  FINISHED
+  ARCHIVED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum TransactionSource {
+  MEMBER
+  TEAM
+}
+
+enum ActivityType {
+  GAME
+  LECTURE
+  MEMORY
+  MASS
+  ROAD
+  OTHER
+}
+
+enum EntityType {
+  USER
+  CONFERENCE
+  TEAM
+  MEMBER
+  CATEGORY
+  REASON
+  TRANSACTION
+  ACTIVITY
+  ACTIVITY_RESULT
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+model User {
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  password        String
+  role            Role          @default(VIEWER)
+  isActive        Boolean       @default(true) // الملاحظة رقم 6
+  conferences     Conference[]  @relation("UserConferences")
+  transactions    Transaction[] @relation("CreatedBy")
+  activityResults ActivityResult[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model Conference {
+  id           String           @id @default(uuid())
+  name         String
+  theme        String?
+  description  String?
+  logo         String?
+  status       ConferenceStatus @default(UPCOMING)
+  startDate    DateTime?
+  endDate      DateTime?
+  
+  settings     ConferenceSettings?
+  teams        Team[]
+  categories   Category[]
+  transactions Transaction[]
+  users        User[]           @relation("UserConferences")
+  activities   Activity[]
+  
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@map("conferences")
+}
+
+model ConferenceSettings {
+  id                  String     @id @default(uuid())
+  conferenceId        String     @unique
+  conference          Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  
+  versePoint          Int        @default(1)
+  questionPoint       Int        @default(5)
+  behaviorInitialScore Int       @default(100)
+  
+  firstPlacePoints    Int        @default(30)
+  secondPlacePoints   Int        @default(20)
+  thirdPlacePoints    Int        @default(10)
+
+  @@map("conference_settings")
+}
+
+model Team {
+  id            String        @id @default(uuid())
+  name          String
+  color         String?       @default("#000000")
+  icon          String?
+  conferenceId  String
+  conference    Conference    @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  
+  members       Member[]
+  transactions  Transaction[]
+  gameResults   ActivityResult[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([conferenceId, name])
+  @@index([conferenceId])
+  @@map("teams")
+}
+
+model Member {
+  id            String        @id @default(uuid())
+  code          String?       @unique // الملاحظة رقم 2
+  name          String
+  phone         String?
+  gender        Gender?
+  birthDate     DateTime?
+  photo         String?       // الملاحظة رقم 8
+  church        String?
+  notes         String?
+  isActive      Boolean       @default(true)
+  
+  teamId        String
+  team          Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  transactions  Transaction[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([teamId])
+  @@map("members")
+}
+
+model Category {
+  id            String        @id @default(uuid())
+  name          String
+  icon          String?
+  color         String?
+  order         Int           @default(0)
+  
+  conferenceId  String
+  conference    Conference    @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  
+  reasons       Reason[]
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+
+  @@unique([conferenceId, name])
+  @@index([conferenceId])
+  @@map("categories")
+}
+
+model Reason {
+  id            String        @id @default(uuid())
+  text          String
+  defaultPoints Int           @default(0)
+  isPositive    Boolean       @default(true)
+  
+  categoryId    String
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  transactions  Transaction[]
+
+  @@index([categoryId])
+  @@map("reasons")
+}
+
+model Activity {
+  id            String        @id @default(uuid())
+  title         String
+  description   String?
+  location      String?
+  startTime     DateTime?
+  endTime       DateTime?
+  totalPoints   Int           @default(0) // الملاحظة رقم 9
+  isCompleted   Boolean       @default(false)
+  type          ActivityType  @default(OTHER)
+  
+  conferenceId  String
+  conference    Conference    @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  
+  results       ActivityResult[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([conferenceId])
+  @@map("activities")
+}
+
+model ActivityResult {
+  id          String   @id @default(uuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  position    Int?
+  points      Int      @default(0)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([activityId, teamId])
+  @@index([activityId]) // الملاحظة رقم 3
+  @@index([teamId])     // الملاحظة رقم 3
+  @@map("activity_results")
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  points        Int
+  source        TransactionSource @default(MEMBER)
+  notes         String?
+  customReason  String?
+  isDeleted     Boolean           @default(false)
+
+  conferenceId  String
+  conference    Conference        @relation(fields: [conferenceId], references: [id])
+
+  teamId        String
+  team          Team              @relation(fields: [teamId], references: [id])
+
+  memberId      String?
+  member        Member?           @relation(fields: [memberId], references: [id])
+
+  categoryId    String
+  category      Category          @relation(fields: [categoryId], references: [id])
+
+  reasonId      String?
+  reason        Reason?           @relation(fields: [reasonId], references: [id])
+
+  createdById   String
+  author        User              @relation("CreatedBy", fields: [createdById], references: [id])
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+
+  @@index([conferenceId])
+  @@index([teamId])
+  @@index([memberId])
+  @@index([createdById]) // الملاحظة رقم 4
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model AuditLog {
+  id         String     @id @default(uuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  action     String
+  entityType EntityType
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId])    // الملاحظة رقم 5
+  @@index([createdAt]) // الملاحظة رقم 5
+  @@map("audit_logs")
+}

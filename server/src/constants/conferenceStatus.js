@@ -1,0 +1,6 @@
+module.exports = {
+  UPCOMING: 'UPCOMING',
+  ACTIVE: 'ACTIVE',
+  FINISHED: 'FINISHED',
+  ARCHIVED: 'ARCHIVED'
+};

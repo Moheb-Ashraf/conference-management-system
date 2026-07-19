@@ -1,0 +1,9 @@
+module.exports = {
+  LOGIN: 'LOGIN',
+  LOGOUT: 'LOGOUT',
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+  ARCHIVE: 'ARCHIVE',
+  RESTORE: 'RESTORE'
+};
