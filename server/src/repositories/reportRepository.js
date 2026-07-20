@@ -47,6 +47,43 @@ class ReportRepository {
       ORDER BY date ASC
     `;
   }
+
+  async getMemberTransactions(conferenceId, memberId) {
+    return await prisma.transaction.findMany({
+      where: { conferenceId, memberId },
+      include: {
+        category: { select: { id: true, name: true } },
+        reason: { select: { id: true, text: true } },
+        author: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async getTeamTransactions(conferenceId, teamId) {
+    return await prisma.transaction.findMany({
+      where: { conferenceId, teamId },
+      include: {
+        member: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
+        reason: { select: { id: true, text: true } },
+        author: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async getConferenceTransactions(conferenceId) {
+    return await prisma.transaction.findMany({
+      where: { conferenceId },
+      include: {
+        member: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
+        reason: { select: { id: true, text: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 }
 
 module.exports = new ReportRepository();

@@ -23,3 +23,21 @@ exports.getDailyReport = asyncHandler(async (req, res) => {
   const report = await reportService.getDailyStats(conferenceId);
   success(res, 'تقرير النشاط اليومي', report);
 });
+
+exports.getMemberBehaviorSummary = asyncHandler(async (req, res) => {
+  const { conferenceId, memberId } = req.params;
+  const report = await reportService.getMemberBehaviorSummary(conferenceId, memberId);
+  success(res, 'ملخص سلوك المخدوم', report);
+});
+
+exports.getTeamBehaviorSummary = asyncHandler(async (req, res) => {
+  const { conferenceId, teamId } = req.params;
+  const report = await reportService.getTeamBehaviorSummary(conferenceId, teamId);
+  success(res, 'ملخص أداء الفريق', report);
+});
+
+exports.getTeamsComparison = asyncHandler(async (req, res) => {
+  const { conferenceId } = req.params;
+  const report = await reportService.getTeamsComparison(conferenceId);
+  success(res, 'مقارنة الفرق', report);
+});
