@@ -19,10 +19,14 @@ class DashboardService {
       dashboardRepository.getCategoriesStats(conferenceId)
     ]);
 
-    // 3. حل مشكلة N+1 وتحسين الأداء باستخدام الـ Maps
-    
+    // 3. جلب بيانات الإثراء بالتوازي (Teams / Members / Categories)
+    const [teams, members, categories] = await Promise.all([
+      teamRepository.findByConferenceId(conferenceId),
+      memberRepository.findManyByIds(rawTopMembers.map(m => m.memberId)),
+      categoryRepository.findByConferenceId(conferenceId) // كل الفئات، مش بس اللي ليها نقاط
+    ]);
+
     // إثراء بيانات الفرق (Ranking)
-    const teams = await teamRepository.findByConferenceId(conferenceId);
     const teamMap = new Map(teams.map(t => [t.id, t]));
     const ranking = rawRanking.map((item, index) => {
       const team = teamMap.get(item.teamId);
@@ -35,8 +39,6 @@ class DashboardService {
     });
 
     // إثراء بيانات المخدومين (Top Members)
-    const memberIds = rawTopMembers.map(m => m.memberId);
-    const members = await memberRepository.findManyByIds(memberIds);
     const memberMap = new Map(members.map(m => [m.id, m]));
     const topMembers = rawTopMembers.map((item, index) => {
       const member = memberMap.get(item.memberId);
@@ -49,18 +51,15 @@ class DashboardService {
     });
 
     // إثراء بيانات الفئات (Category Distribution)
-    const categoryIds = rawCategories.map(c => c.categoryId);
-    const categories = await categoryRepository.findManyByIds(categoryIds);
-    const categoryMap = new Map(categories.map(c => [c.id, c]));
-    const categoryStats = rawCategories.map(item => {
-      const cat = categoryMap.get(item.categoryId);
-      return {
-        name: cat?.name || 'Unknown',
-        color: cat?.color || '#cccccc',
-        icon: cat?.icon || 'star',
-        totalPoints: item._sum.points || 0
-      };
-    });
+    // نبدأ من كل الفئات الخاصة بالمؤتمر، مش من rawCategories
+    // عشان الفئات اللي مالهاش نقاط تظهر برضو بـ totalPoints = 0
+    const pointsMap = new Map(rawCategories.map(c => [c.categoryId, c._sum.points || 0]));
+    const categoryStats = categories.map(cat => ({
+      name: cat.name,
+      color: cat.color || '#cccccc',
+      icon: cat.icon || 'star',
+      totalPoints: pointsMap.get(cat.id) || 0
+    }));
 
     return {
       summary,
