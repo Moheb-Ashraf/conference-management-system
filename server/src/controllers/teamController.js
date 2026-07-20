@@ -18,3 +18,8 @@ exports.getConferenceTeams = asyncHandler(async (req, res) => {
   const teams = await teamService.getConferenceTeams(req.params.conferenceId);
   success(res, 'قائمة فرق المؤتمر', { teams });
 });
+
+exports.delete = asyncHandler(async (req, res) => {
+  const team = await teamService.deleteTeam(req.params.id, req.user.id);
+  success(res, 'تم حذف الفريق بنجاح', { team });
+});

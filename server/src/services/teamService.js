@@ -44,5 +44,24 @@ class TeamService {
       return updated;
     });
   }
+
+  async deleteTeam(id, userId) {
+    const existing = await teamRepository.findById(id);
+    if (!existing) throw new AppError('الفريق غير موجود', 404);
+
+    return await prisma.$transaction(async (tx) => {
+      const deleted = await teamRepository.delete(id, tx);
+      await auditRepository.create({
+        userId,
+        action: UPDATE,
+        entityType: TEAM,
+        entityId: id,
+        oldValue: existing,
+        newValue: deleted
+      }, tx);
+
+      return deleted;
+    });
+  }
 }
 module.exports = new TeamService();

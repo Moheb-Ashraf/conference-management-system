@@ -19,5 +19,9 @@ class TeamRepository {
   async update(id, data, tx = prisma) {
     return await tx.team.update({ where: { id }, data });
   }
+
+  async delete(id, tx = prisma) {
+    return await tx.team.delete({ where: { id } });
+  }
 }
 module.exports = new TeamRepository();
