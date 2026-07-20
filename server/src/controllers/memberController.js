@@ -23,3 +23,8 @@ exports.getMember = asyncHandler(async (req, res) => {
   const member = await memberService.getMemberById(req.params.id);
   success(res, 'بيانات المخدوم', { member });
 });
+
+exports.delete = asyncHandler(async (req, res) => {
+  const member = await memberService.deleteMember(req.params.id, req.user.id);
+  success(res, 'تم حذف المخدوم بنجاح', { member });
+});

@@ -14,6 +14,7 @@ router.route('/')
 
 router.route('/:id')
   .get(memberController.getMember)
-  .patch(restrictTo(ADMIN, LEADER), memberController.update);
+  .patch(restrictTo(ADMIN, LEADER), memberController.update)
+  .delete(restrictTo(ADMIN, LEADER), memberController.delete);
 
 module.exports = router;

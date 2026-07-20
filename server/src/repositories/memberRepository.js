@@ -29,6 +29,10 @@ class MemberRepository {
   async update(id, data, tx = prisma) {
     return await tx.member.update({ where: { id }, data });
   }
+
+  async delete(id, tx = prisma) {
+    return await tx.member.delete({ where: { id } });
+  }
 }
 
 module.exports = new MemberRepository();

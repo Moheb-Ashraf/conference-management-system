@@ -60,6 +60,25 @@ class MemberService {
       return updated;
     });
   }
+
+  async deleteMember(id, userId) {
+    const existing = await memberRepository.findById(id);
+    if (!existing) throw new AppError('المخدوم غير موجود', 404);
+
+    return await prisma.$transaction(async (tx) => {
+      const deleted = await memberRepository.delete(id, tx);
+      await auditRepository.create({
+        userId,
+        action: UPDATE,
+        entityType: MEMBER,
+        entityId: id,
+        oldValue: existing,
+        newValue: deleted
+      }, tx);
+
+      return deleted;
+    });
+  }
 }
 
 module.exports = new MemberService();
