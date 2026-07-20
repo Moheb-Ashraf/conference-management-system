@@ -10,6 +10,7 @@ const memberRoutes = require('./routes/memberRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // استيراد معالج الأخطاء
 const errorHandler = require('./middlewares/errorHandler');
@@ -54,6 +55,7 @@ app.use('/api/members', memberRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/users', userRoutes);
 
 // 6. التعامل مع الروابط غير الموجودة (404 Not Found)
 // التعديل هنا: حذفنا '*' وتركناها كـ Middleware عام

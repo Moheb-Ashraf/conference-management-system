@@ -6,17 +6,19 @@ class ConferenceRepository {
   }
 
   async findMany(userId, role, tx = prisma) {
-  // إذا كان أدمن، يرى كل المؤتمرات. إذا كان قائداً، يرى المنسوب له فقط.
-  const where = role === 'ADMIN' ? { isArchived: false } : { 
-    isArchived: false,
-    users: { some: { id: userId } } // فلترة حسب المستخدم
-  };
+    const where = role === 'ADMIN'
+      ? { status: { not: 'ARCHIVED' } }
+      : {
+          status: { not: 'ARCHIVED' },
+          users: { some: { id: userId } }
+        };
 
-  return await tx.conference.findMany({
-    where,
-    orderBy: { createdAt: 'desc' }
-  });
-}
+    return await tx.conference.findMany({
+      where,
+      include: { settings: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 
   async findById(id, tx = prisma) {
     return await tx.conference.findUnique({

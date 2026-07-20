@@ -29,9 +29,9 @@ class ConferenceService {
   }
 
   async getAllConferences(userId, role) {
-  // يجب تمرير userId و role للـ Repository ليقوم بالفلترة الصحيحة
-  return await conferenceRepository.findMany(userId, role);
-}
+    if (!userId) throw new AppError('User ID is required', 400);
+    return await conferenceRepository.findMany(userId, role);
+  }
 
   async getConferenceById(id) {
     const conference = await conferenceRepository.findById(id);
