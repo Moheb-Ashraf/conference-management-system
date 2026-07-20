@@ -3,6 +3,11 @@ const { createMemberSchema } = require('../validators/member.schema');
 const { success } = require('../utils/apiResponse');
 const asyncHandler = require('../middlewares/asyncHandler');
 
+exports.update = asyncHandler(async (req, res) => {
+  const member = await memberService.updateMember(req.params.id, req.body, req.user.id);
+  success(res, 'تم تحديث المخدوم بنجاح', { member });
+});
+
 exports.createMember = asyncHandler(async (req, res) => {
   const validatedData = createMemberSchema.parse(req.body);
   const member = await memberService.createMember(req.params.teamId, validatedData, req.user.id);

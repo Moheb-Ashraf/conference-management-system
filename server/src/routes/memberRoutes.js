@@ -13,6 +13,7 @@ router.route('/')
   .get(memberController.getTeamMembers);
 
 router.route('/:id')
-  .get(memberController.getMember);
+  .get(memberController.getMember)
+  .patch(restrictTo(ADMIN, LEADER), memberController.update);
 
 module.exports = router;

@@ -41,6 +41,25 @@ class MemberService {
     if (!member) throw new AppError('المخدوم غير موجود', 404);
     return member;
   }
+
+  async updateMember(id, data, userId) {
+    const existing = await memberRepository.findById(id);
+    if (!existing) throw new AppError('المخدوم غير موجود', 404);
+
+    return await prisma.$transaction(async (tx) => {
+      const updated = await memberRepository.update(id, data, tx);
+      await auditRepository.create({
+        userId,
+        action: UPDATE,
+        entityType: MEMBER,
+        entityId: id,
+        oldValue: existing,
+        newValue: updated
+      }, tx);
+
+      return updated;
+    });
+  }
 }
 
 module.exports = new MemberService();

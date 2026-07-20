@@ -15,4 +15,7 @@ router.route('/')
   .post(restrictTo(ADMIN, LEADER), teamController.createTeam)
   .get(teamController.getConferenceTeams);
 
+router.route('/:id')
+  .patch(restrictTo(ADMIN, LEADER), teamController.update);
+
 module.exports = router;

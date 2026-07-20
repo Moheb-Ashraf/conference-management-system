@@ -25,5 +25,24 @@ class TeamService {
   async getConferenceTeams(conferenceId) {
     return await teamRepository.findByConferenceId(conferenceId);
   }
+
+  async updateTeam(id, data, userId) {
+    const existing = await teamRepository.findById(id);
+    if (!existing) throw new AppError('الفريق غير موجود', 404);
+
+    return await prisma.$transaction(async (tx) => {
+      const updated = await teamRepository.update(id, data, tx);
+      await auditRepository.create({
+        userId,
+        action: UPDATE,
+        entityType: TEAM,
+        entityId: id,
+        oldValue: existing,
+        newValue: updated
+      }, tx);
+
+      return updated;
+    });
+  }
 }
 module.exports = new TeamService();
