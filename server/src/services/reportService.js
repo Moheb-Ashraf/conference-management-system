@@ -2,6 +2,7 @@ const reportRepository = require('../repositories/reportRepository');
 const conferenceRepository = require('../repositories/conferenceRepository');
 const memberRepository = require('../repositories/memberRepository');
 const teamRepository = require('../repositories/teamRepository');
+const categoryRepository = require('../repositories/categoryRepository');
 const AppError = require('../utils/appError');
 
 class ReportService {
@@ -44,6 +45,9 @@ class ReportService {
 
     const transactions = await reportRepository.getMemberTransactions(conferenceId, memberId);
 
+    // جلب كل الفئات (مع الأسباب) الخاصة بالمؤتمر عشان نعمل seed للـ breakdown
+    const categories = await categoryRepository.findByConferenceId(conferenceId);
+
     const totals = transactions.reduce((acc, tx) => {
       if (tx.isDeleted) return acc;
       acc.totalPoints += tx.points;
@@ -52,31 +56,40 @@ class ReportService {
       return acc;
     }, { totalPoints: 0, positivePoints: 0, negativePoints: 0 });
 
-    const categoryBreakdown = Object.values(transactions.reduce((acc, tx) => {
-      if (!tx.category) return acc;
+    // Seed: كل فئة تبدأ بـ 0 نقطة و0 عملية، حتى لو معندهاش transactions
+    const categoryAcc = {};
+    categories.forEach(cat => {
+      categoryAcc[cat.id] = { categoryName: cat.name, totalPoints: 0, transactionsCount: 0 };
+    });
+    transactions.forEach(tx => {
+      if (!tx.category) return;
       const key = tx.category.id;
-      if (!acc[key]) {
-        acc[key] = { categoryName: tx.category.name, totalPoints: 0, transactionsCount: 0 };
+      if (!categoryAcc[key]) {
+        // احتياطي لو فيه فئة اتحذفت بس لسه ليها transactions قديمة
+        categoryAcc[key] = { categoryName: tx.category.name, totalPoints: 0, transactionsCount: 0 };
       }
-      if (!tx.isDeleted) {
-        acc[key].totalPoints += tx.points;
-      }
-      acc[key].transactionsCount += 1;
-      return acc;
-    }, {}));
+      if (!tx.isDeleted) categoryAcc[key].totalPoints += tx.points;
+      categoryAcc[key].transactionsCount += 1;
+    });
+    const categoryBreakdown = Object.values(categoryAcc);
 
-    const reasonBreakdown = Object.values(transactions.reduce((acc, tx) => {
-      if (!tx.reason) return acc;
+    // Seed: كل سبب من كل الفئات يبدأ بـ 0
+    const reasonAcc = {};
+    categories.forEach(cat => {
+      (cat.reasons || []).forEach(reason => {
+        reasonAcc[reason.id] = { reasonText: reason.text, totalPoints: 0, transactionsCount: 0 };
+      });
+    });
+    transactions.forEach(tx => {
+      if (!tx.reason) return;
       const key = tx.reason.id;
-      if (!acc[key]) {
-        acc[key] = { reasonText: tx.reason.text, totalPoints: 0, transactionsCount: 0 };
+      if (!reasonAcc[key]) {
+        reasonAcc[key] = { reasonText: tx.reason.text, totalPoints: 0, transactionsCount: 0 };
       }
-      if (!tx.isDeleted) {
-        acc[key].totalPoints += tx.points;
-      }
-      acc[key].transactionsCount += 1;
-      return acc;
-    }, {}));
+      if (!tx.isDeleted) reasonAcc[key].totalPoints += tx.points;
+      reasonAcc[key].transactionsCount += 1;
+    });
+    const reasonBreakdown = Object.values(reasonAcc);
 
     return {
       member: {
@@ -118,6 +131,9 @@ class ReportService {
 
     const transactions = await reportRepository.getTeamTransactions(conferenceId, teamId);
 
+    // جلب كل الفئات الخاصة بالمؤتمر عشان نعمل seed للـ breakdown
+    const categories = await categoryRepository.findByConferenceId(conferenceId);
+
     const totals = transactions.reduce((acc, tx) => {
       if (tx.isDeleted) return acc;
       acc.totalPoints += tx.points;
@@ -126,18 +142,21 @@ class ReportService {
       return acc;
     }, { totalPoints: 0, positivePoints: 0, negativePoints: 0 });
 
-    const categoryBreakdown = Object.values(transactions.reduce((acc, tx) => {
-      if (!tx.category) return acc;
+    // Seed: كل فئة تبدأ بـ 0 نقطة و0 عملية
+    const categoryAcc = {};
+    categories.forEach(cat => {
+      categoryAcc[cat.id] = { categoryName: cat.name, totalPoints: 0, transactionsCount: 0 };
+    });
+    transactions.forEach(tx => {
+      if (!tx.category) return;
       const key = tx.category.id;
-      if (!acc[key]) {
-        acc[key] = { categoryName: tx.category.name, totalPoints: 0, transactionsCount: 0 };
+      if (!categoryAcc[key]) {
+        categoryAcc[key] = { categoryName: tx.category.name, totalPoints: 0, transactionsCount: 0 };
       }
-      if (!tx.isDeleted) {
-        acc[key].totalPoints += tx.points;
-      }
-      acc[key].transactionsCount += 1;
-      return acc;
-    }, {}));
+      if (!tx.isDeleted) categoryAcc[key].totalPoints += tx.points;
+      categoryAcc[key].transactionsCount += 1;
+    });
+    const categoryBreakdown = Object.values(categoryAcc);
 
     const memberBreakdown = Object.values(transactions.reduce((acc, tx) => {
       if (!tx.member) return acc;
@@ -187,6 +206,9 @@ class ReportService {
     const teams = await teamRepository.findByConferenceId(conferenceId);
     const transactions = await reportRepository.getConferenceTransactions(conferenceId);
 
+    // جلب كل الفئات مرة واحدة بره اللوب على الفرق (توفيرًا للأداء)
+    const categories = await categoryRepository.findByConferenceId(conferenceId);
+
     const teamStats = teams.map(team => {
       const teamTransactions = transactions.filter(tx => tx.teamId === team.id);
       const totals = teamTransactions.reduce((acc, tx) => {
@@ -197,17 +219,22 @@ class ReportService {
         return acc;
       }, { totalPoints: 0, positivePoints: 0, negativePoints: 0 });
 
-      const categoryBreakdown = Object.values(teamTransactions.reduce((acc, tx) => {
-        if (!tx.category) return acc;
+      // Seed: كل الفئات تبدأ بـ 0 لكل فريق، حتى لو مالوش عمليات في الفئة دي
+      const categoryAcc = {};
+      categories.forEach(cat => {
+        categoryAcc[cat.id] = { categoryName: cat.name, totalPoints: 0 };
+      });
+      teamTransactions.forEach(tx => {
+        if (!tx.category) return;
         const key = tx.category.id;
-        if (!acc[key]) {
-          acc[key] = { categoryName: tx.category.name, totalPoints: 0 };
+        if (!categoryAcc[key]) {
+          categoryAcc[key] = { categoryName: tx.category.name, totalPoints: 0 };
         }
         if (!tx.isDeleted) {
-          acc[key].totalPoints += tx.points;
+          categoryAcc[key].totalPoints += tx.points;
         }
-        return acc;
-      }, {}));
+      });
+      const categoryBreakdown = Object.values(categoryAcc);
 
       return {
         teamId: team.id,
